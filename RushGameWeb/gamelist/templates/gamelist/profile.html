@@ -1,0 +1,49 @@
+{% extends 'game/base.html'%}
+
+{% block title %}Profile{% endblock %}
+
+{% block body %}
+
+
+
+
+        <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Score Summary</h4></div>
+                <div class="panel-body">
+                <p>Total Number Of Mathches Played : {{ count }}</p>
+            
+    
+                    
+          
+
+    
+              <table class="table table-striped" id="tb">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Upgrade Count</th>
+                        <th>Enemy Killed</th>
+                        <th>Score</th>
+                        <th>Total Score</th>
+                    </tr>
+                </thead>
+                <tbody id="table">
+                {% for s in all_score %}
+                 <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ s.upgradeCount }}</td>
+                        <td>{{ s.enemyKilled }}</td>
+                        <td>{{ s.score }}</td>
+                        <td>{{ s.tscore }}</td>
+                </tr>   
+                {% endfor %}
+
+                </tbody>
+            </table>
+    </div>
+</div>
+
+</body>
+
+{% endblock %}

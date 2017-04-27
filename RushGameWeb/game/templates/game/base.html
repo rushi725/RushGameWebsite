@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>{%block title %}Welcome{% endblock %}</title>
+	{% load staticfiles %}
+
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"/>
+
+	<link href="https://fonts.googleapis.com/css?family=Satisfy" rel="stylesheet">
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+	<link rel="stylesheet" type="text/css" href="{% static 'game/style.css' %}"/>
+</head>
+<body>	
+<nav class="navbar navbar-inverse">
+	<div class="container">
+		<!--logo-->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#mainNavBar">
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			<a href="{% url 'game:gamelist:index' %}" class="navbar-brand">Rushabh</a>
+		</div>
+
+		<!--menu items-->
+		<div class="collapse navbar-collapse" id="mainNavBar">
+			<ul class="nav navbar-nav">
+				<li class=""><a href="#">
+				<span class="glyphicon glyphicon-expand" aria-hidden="true"></span>&nbsp;
+				Play</a></li>
+
+				<li><a href="{% url 'gamelist:leaderboard' %}"><span class="glyphicon glyphicon-list-alt" aria-hidden="true"></span>&nbsp;
+				Scoreboard</a></li>
+
+				<li><a href="#">About</a></li>
+
+			</ul>
+			{% if request.user.is_authenticated %}
+				<ul class="nav navbar-nav navbar-right">
+	
+				<li><a href="{% url 'gamelist:profile' %}"><span class="glyphicon glyphicon-user"></span>&nbsp; Profile</a></li>
+
+				<li><a href="#"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>&nbsp;
+				Setting</a></li>
+
+				<li id="logout"><a href="{% url 'game:logout' %}"><span class="glyphicon glyphicon-off" aria-hidden="true"></span>&nbsp;
+				Logout</a></li>
+			</ul>
+			{% endif %}
+		</div>
+	</div>
+	</nav>
+	{% block body %}
+	{% endblock %}
+</body>
+</html>

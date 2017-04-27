@@ -1,0 +1,48 @@
+{% extends 'game/base.html' %}
+{% block title %}scoreboard{% endblock %}
+{% load staticfiles %}
+
+
+{% block body %}
+        <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Leaderboard</h4></div>
+                <div class="panel-body">
+                <select id="select" onchange="select()">
+                	<option>Total Score</option>
+                	<option>Enemy Killed</option>
+                	<option>Upgrade Count</option>
+                </select>
+
+              <table class="table table-striped" id="tb">
+     	          <thead>
+                    <tr>
+                        <th>No</th>
+                        <th id="item">Total Score</th>
+                    </tr>
+                </thead>
+                <tbody id="table">
+                <!-->{% for s in all_score %}
+                 <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ s.upgradeCount }}</td>
+                        <td>{{ s.enemyKilled }}</td>
+                        <td>{{ s.score }}</td>
+                        <td>{{ s.tscore }}</td>
+                </tr>   
+                {% endfor %}<!-->
+
+                </tbody>
+            </table>
+    </div>
+</div>
+<script type="text/javascript">
+	function select(){
+	var s = document.getElementById("select").value;
+	document.getElementById("item").innerHTML = s;
+}
+
+</script>
+
+</body>
+{% endblock %}

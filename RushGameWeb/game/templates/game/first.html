@@ -1,0 +1,27 @@
+{% extends 'game/base.html' %}
+
+{% block body %}
+
+
+
+
+<body>
+<h2>Please Log in To Play Exciting Games</h2>
+
+<div class="container">
+<a href="{% url 'game:login' %}"><button type="button" class="btn btn-success">Login</button></a>
+
+
+	<br>
+	<br>
+	<div style="inline";>
+	<a href="{% url 'game:register' %}">
+		<button class="btn btn-primary" type="button">Sign Up</button></a>
+	</div>
+</div>
+
+</body>
+
+
+
+{% endblock %}

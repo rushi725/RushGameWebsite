@@ -1,0 +1,26 @@
+{% extends 'game/base.html'%}
+
+{% block title %}Score{% endblock %}
+
+{% block body %}
+	<center>
+     <div class="container col-md-6">
+        <div class="panel panel-default">
+            <div class="panel-heading"><h4>Your Score</h4></div>
+        <div class="panel-body">
+        	<h2>Upgrade Count :         {{ scoreboard.upgradeCount }}</h2>
+        	<h2>Enemy Killed :          {{ scoreboard.enemyKilled }}</h2>
+            <h2>Score :                 {{ scoreboard.score }}</h2>
+    	</div>
+    <div class="panel panel-footer">
+    	<a href="{% url 'game:gamelist:game1' %}" class="btn btn-success btn-block">Play Again</a>
+    </div>
+	</div>
+	</div>
+	</center>
+
+
+{% if error_message %}
+	<p><strong>{{ error_message }}</strong>
+{% endif %}
+{% endblock %}

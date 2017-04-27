@@ -1,0 +1,607 @@
+{% extends 'game/base.html' %}
+{% block title %}game1{% endblock %}
+{% load staticfiles %}
+
+{% block body %}
+<div class="container">
+<div class="row" style="align-self: center;">
+<canvas id="my_canvas" width="850" height="500" style="border:1px solid red; background-color: black;" class="col-xs-12 col-lg-9">
+</canvas>
+</div>
+<div style="display: none;">
+	<form id="myForm" action="{% url 'gamelist:score-add' %}" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p}}
+        
+    </form>
+
+
+</div>
+</div>
+
+<script type="text/javascript">
+var Enemylist ={};
+
+var Upgradelist ={};
+
+var Bulletlist = {};
+var framecount = 0;
+var score = 0;
+var upgradeCount = 0;
+var enemyKilled = 0;
+var player;
+var paused = false;
+var flag = 0;
+
+var Img = {}; 
+Img.player = new Image();
+Img.player.src = "{% static 'gamelist/images/players2.png' %}";
+Img.enemy1 = new Image();
+Img.enemy1.src = "{% static 'gamelist/images/birdsprite2.png' %}";
+Img.enemy2 = new Image();
+Img.enemy2.src = "{% static 'gamelist/images/birdsprite2.png' %}";
+Img.bullet = new Image();
+Img.bullet.src = "{% static 'gamelist/images/Bullet.png' %}";
+Img.upgrade1 = new Image();
+Img.upgrade1.src = "{% static 'gamelist/images/upgrade1.png' %}";
+Img.upgrade2 = new Image();
+Img.upgrade2.src = "{% static 'gamelist/images/upgrade2.png' %}";
+Img.map = new Image();
+Img.map.src = "{% static 'gamelist/images/map.jpg' %}";
+
+Entity = function(type,spdX,spdY,x,y,width,height,img){
+	var self = {
+		type:type,
+		spdX:spdX,
+		spdY:spdY,
+		x :x,
+		y :y,
+		width:width,
+		height:height,
+		img:img,
+	};
+	return self;
+}
+createPlayer = function(){
+	var self = Entity('player',40,10,500,500,80,80,Img.player);
+	self.hp = 20;
+	self.hpMax = self.hp;
+	self.atkSpd = 1;
+	self.attackcounter = 0;
+	self.pressingDown = false;
+	self.pressingUp = false;
+	self.pressingLeft = false;
+	self.pressingRight = false;
+	self.aimAngle = 0;
+	player = self;
+}
+
+Enemy = function(x,y,spdX,spdY,id,width,height,img,hp,atkSpd){
+	var self = Entity('Enemy',spdX,spdY,x,y,width,height,img);
+	self.hp = hp;
+	self.hpMax = hp;
+	self.atkSpd = atkSpd;
+	self.aimAngle = 0;
+	self.attackcounter = 0;
+	self.edirection = 2;
+	Enemylist[id] = self;
+}
+
+Upgrade = function(x,y,spdX,spdY,id,width,height,category,img){
+	var self = Entity('Upgrade',spdX,spdY,x,y,width,height,img);
+	self.category = category;
+	Upgradelist[id] = self;
+}
+
+Bullet = function(x,y,spdX,spdY,id,width,height,img,combatType){
+ 	var self = Entity('Bullet',spdX,spdY,x,y,width,height,img);
+ 	self.combatType = combatType;
+
+	self.timer = 0;
+	Bulletlist[id] = self;
+}
+	var canvas =null;
+	var context = null;
+	var timewhenstarted = Date.now();
+
+	var direction = 0;
+	var movement = 0;
+	var emovement = 0;
+	canvas = document.getElementById("my_canvas");
+	context = canvas.getContext('2d');		
+
+
+
+context.font = "30px Arial";
+
+updateEntity = function(s) {
+ 	updateEntityPosition(s);
+ 	drawEntity(s);	
+}
+
+updateEntityPosition = function(s){
+	if(s.type == 'player')
+	{
+		if(player.pressingRight){
+			player.x += 10;
+			direction = 2;
+
+		}
+		else if(player.pressingLeft){
+			player.x -= 10;
+			direction = 1;
+		}
+		else if(player.pressingDown){
+			player.y += 10;
+			direction = 0;
+		}
+		else if(player.pressingUp){
+			player.y -= 10;
+			direction = 3;
+		}
+		else{
+			movement = 0;
+
+		}
+		
+
+
+		Boundarychecking();
+	}
+	else{
+ 		s.x += s.spdX;
+ 		s.y += s.spdY;
+
+ 	
+ 
+ 		if(s.x<=s.width/2 || s.x>=currentMap.width-s.width/2){
+ 				s.spdX = -s.spdX;
+ 				if(s.x >= currentMap.width-s.width/2 && s.type == 'Enemy')
+ 					s.edirection = 1;
+ 				else if(s.x <= s.width/2 && s.type == 'Enemy')
+ 					s.edirection = 2;
+ 		}
+
+ 		if(s.y<=s.height/2 || s.y>=currentMap
+ 			.height-s.height/2){
+ 			s.spdY = -s.spdY;
+ 		}
+
+	}
+}
+
+drawEntity = function(s){
+	context.save();
+	//var x =s.x-s.width/2;
+	//var y =s.y-s.height/2;
+	var x =s.x - player.x;
+	var y =s.y - player.y;
+
+	x+=canvas.width/2;
+	y+=canvas.height/2;
+
+	x-=s.width/2;
+	y-=s.height/2;
+	if(s.type == 'player'){
+		var move = Math.floor(movement) % 3;
+		context.drawImage(s.img,move*s.img.width/3,direction*s.img.height/4,s.img.width/3,s.img.height/4,x,y,s.width,s.height);
+	}
+	else if(s.type == 'Enemy'){
+		var move = Math.floor(emovement) % 3;
+		context.drawImage(s.img,move*s.img.width/3,s.edirection*s.img.height/4,s.img.width/3,s.img.height/4,x,y,s.width,s.height);
+
+	}
+	else
+		context.drawImage(s.img,0,0,s.img.width,s.img.height,x,y,s.width,s.height);
+	if(s.type=='Enemy' || s.type == 'player'){
+	x += s.width/2;
+	y -= 20;
+	context.fillStyle = 'red';
+	var width = 100*s.hp/s.hpMax;
+	if(width<0)
+		width = 0;
+	context.fillRect(x-50,y,width,10);
+	context.strokeStyle = 'black';
+	context.strokeRect(x-50,y,100,10);
+}
+
+	context.restore();
+}
+
+getDistanceBetweenEntity = function(entity1,entity2){
+ 	var vx = entity1.x - entity2.x;
+ 	var vy = entity1.y - entity2.y;
+ 	return Math.sqrt(vx*vx+vy*vy);
+}
+
+testCollisionRectRect = function(rect1,rect2){
+ 	return rect1.x <= rect2.x + rect2.width
+ 		&& rect2.x <= rect1.x + rect1.width
+ 		&& rect2.y <= rect1.y + rect1.height
+ 		&& rect1.y <= rect2.y + rect2.width;
+ 
+}
+
+testCollisionEntity = function(entity1,entity2){
+ 	var rect1 = {
+ 		x:entity1.x-entity1.width/2,
+ 		y:entity1.y-entity2.height/2,
+ 		width:entity1.width,
+ 		height:entity1.height,
+ 	}
+ 	var rect2 = {
+ 		x:entity2.x-entity2.width/2,
+ 		y:entity2.y-entity2.height/2,
+ 		width:entity2.width,
+ 		height:entity2.height,
+ 	}
+ 	return testCollisionRectRect(rect1,rect2);
+
+}
+
+updateAim = function(actor){
+	var diffX = player.x - actor.x;
+	var diffY = player.y - actor.y;
+
+	actor.aimAngle = Math.atan2(diffY,diffX)/Math.PI*180;
+}
+
+document.onclick = function(){
+	performAttack(player);
+ }
+ performAttack = function(actor){
+ 	 if(actor.attackcounter > 25){
+ 		GenerateBullet(actor);
+ 		actor.attackcounter = 0;
+ 	}
+ }
+
+
+document.onkeydown = function(event){
+	if(event.keyCode == 39)
+		player.pressingRight = true;
+	else if(event.keyCode == 40)
+		player.pressingDown = true;
+	else if(event.keyCode == 37)
+		player.pressingLeft = true;
+	else if(event.keyCode == 38)
+		player.pressingUp = true;
+	else if(event.keyCode == 80)
+		paused = !paused;
+	else if(event.keyCode == 13 && flag == 1){
+		startNewGame();
+		id = setInterval(update,40);
+	}
+
+
+}
+
+document.onkeyup = function(event){
+	if(event.keyCode == 39)
+		player.pressingRight =false;
+	else if(event.keyCode == 40)
+		player.pressingDown =false;
+	else if(event.keyCode == 37)
+		player.pressingLeft =false;
+	else if(event.keyCode == 38)
+		player.pressingUp =false;
+}
+
+Boundarychecking = function(){
+	if(player.x < player.width/2)
+		player.x = player.width/2;
+	if(player.x > currentMap.width-player.width/2)
+		player.x = currentMap.width-player.width/2;
+	if(player.y < player.height/2)
+		player.y = player.height/2;
+	if(player.y > currentMap.height-player.height/2)
+		player.y = currentMap.height-player.height/2;
+}
+
+startNewGame = function()
+ {	
+ 	player.hp = 20;
+ 	flag = 0;
+ 	timewhenstarted = Date.now();
+ 	framecount = 0;
+ 	score = 0;
+ 	upgradeCount = 0;
+ 	enemyKilled = 0;
+ 	edirection = 2;
+ 	Enemylist = {};
+ 	Upgradelist = {};
+ 	Bulletlist = {};
+ 	randomlyGenerateEnemy();
+ 	randomlyGenerateEnemy();
+ 	randomlyGenerateEnemy();
+}
+db = window.openDatabase("Scoreboard","1.0","Score DB", 1000000);
+
+StoreData = function() {
+	//create table
+	/*db.transaction(function(tr){
+		tr.executeSql("create table Scoreboard (dscore int, dupgradeCount int, denemyKilled int)");
+	
+	});
+
+	db.transaction(function(tr){
+        var insertStatement="INSERT INTO Scoreboard(dscore,dupgradeCount,denemyKilled) VALUES(?,?,?)";
+        tr.executeSql(insertStatement, [score, upgradeCount, enemyKilled]);
+
+	});*/
+	document.getElementById("id_score").value = score;
+	document.getElementById("id_upgradeCount").value = upgradeCount;
+	document.getElementById("id_enemyKilled").value = enemyKilled;
+	document.getElementById("myForm").submit();
+
+}
+
+
+
+ performSpecialAttack = function(actor){
+ 	if(actor.attackcounter > 50){
+		var angle = 0;
+		while(angle< 360){
+		GenerateBullet(actor,angle);
+		angle+=30;
+		}
+
+		actor.attackcounter = 0;
+	}
+
+ }
+
+document.onmousemove = function(mouse){
+	var mouseX = mouse.clientX - document.getElementById('my_canvas').getBoundingClientRect().left;
+	var mouseY = mouse.clientY - 8;
+
+	mouseX -= canvas.width/2;
+	mouseY -= canvas.height/2;
+
+	player.aimAngle = Math.atan2(mouseY,mouseX)/ Math.PI * 180;
+}
+
+document.oncontextmenu = function(mouse){
+	mouse.preventDefault();
+	performSpecialAttack(player);
+	
+}
+
+randomlyGenerateEnemy = function(){
+ 	var x =Math.random()*currentMap.width;
+ 	var y =Math.random()*currentMap.height;
+ 	var width = 85;
+ 	var height = 85;
+ 	if(x < width*1.5)
+ 		x = width*1.5;
+ 	else if(x > currentMap.width - width*1.5)
+ 		x = currentMap.width - width*1.5;
+ 	if(y < height*1.5)
+ 		y = height*1.5;
+ 	else if(y > currentMap.height - height*1.5)
+ 		y = currentMap.height - height*1.5;
+
+ 	var spdX = 5 + Math.random() * 5;
+ 	var spdY = 5 + Math.random() * 5;
+ 	var id = Math.random();
+ 	if(Math.random() < 0.5)
+ 		Enemy(x,y,spdX,spdY,id,width,height,Img.enemy1,1,1);
+ 	else
+ 		Enemy(x,y,spdX,spdY,id,width,height,Img.enemy2,2,3);
+}
+
+randomlyGenerateUpgrade = function(){
+ 	var x =Math.random()*currentMap.width;
+ 	var y =Math.random()*currentMap.height;
+ 	var width = 50;
+ 	var height = 50; 
+ 	var spdX = 0;
+ 	var spdY = 0;
+ 	var id = Math.random();
+ 	var img = Img.upgrade1;
+ 	var category = null;
+ 
+
+ 	if(Math.random() < 0.5){
+ 		 category = 'low';
+ 	}else{
+ 		 category = 'high';
+ 	}
+
+ 	if(category == 'high')
+ 		img = Img.upgrade2;
+ 	Upgrade(x,y,spdX,spdY,id,width,height,category,img);
+}
+
+GenerateBullet = function(actor,overwriteAngle){
+ 	var x = actor.x;
+ 	var y = actor.y;
+ 	var width = 30;
+ 	var height = 30; 
+ 	var img = Img.bullet;
+ 	
+ 	var angle  = actor.aimAngle;
+ 	if(overwriteAngle != undefined){
+ 		angle = overwriteAngle;
+ 	}
+
+ 	var spdX = Math.cos(angle/180*Math.PI) * 5;
+ 	var spdY = Math.sin(angle/180*Math.PI) * 5;
+ 	var id = Math.random();
+ 	Bullet(x,y,spdX,spdY,id,width,height,img,actor.type);
+}
+	
+
+update = function() {
+	if(paused){
+		context.fillText('Paused',canvas.width/2,canvas.height/2);
+		return;
+	}
+ 	context.clearRect(0,0,canvas.width,canvas.height);
+ 	currentMap.draw();
+ 
+ 	updateFrameCountAndCounter();
+ 	updateBulllet();
+ 	updateUpgrade();
+ 	updateEnemy();
+ 	updateEntity(player);
+
+ 	context.fillText('Hp: '+player.hp,0,30);
+ 	context.fillText('Score: '+ score,200,30)
+}
+
+updateEnemy = function() {
+ 	for(var key in Enemylist){
+ 		updateEntity(Enemylist[key]);
+
+ 		var isColliding = testCollisionEntity(player,Enemylist[key]);
+ 		if(isColliding){
+ 			player.hp = player.hp-1;
+ 			console.log(player.hp);
+ 		}
+ 	}
+ 	if(player.hp<=0){
+ 		var timesurvived = Date.now() - timewhenstarted;			
+ 		console.log('You lost You survived for '+timesurvived+'ms');
+ 		timewhenstarted = Date.now();
+ 		clearInterval(id);
+ 		flag = 1;
+ 		context.fillText('Game Over!!',canvas.width/2,canvas.height/2);
+ 		StoreData();
+ 	 	}	
+
+}
+
+updateUpgrade = function(){
+ 	for(var key in Upgradelist){
+ 		updateEntity(Upgradelist[key]);
+
+ 		var isColliding = testCollisionEntity(player,Upgradelist[key]);
+ 		if(isColliding){
+ 			if(Upgradelist[key].category =='low'){
+ 				score += 100;
+ 				player.hp+=2;
+ 				if(player.hp>20)
+ 					player.hp=20;
+ 			}
+ 			else{
+ 				score += 500;
+ 				player.hp+=4;
+ 				if(player.hp>20)
+ 					player.hp=20;
+ 			}
+ 			upgradeCount += 1;
+ 			delete Upgradelist[key];
+
+ 		}
+ 	}
+}
+
+updateBulllet = function(){
+for(var key in Bulletlist){
+ 		updateEntity(Bulletlist[key])
+ 		var toRemove = false;
+ 		Bulletlist[key].timer++;
+
+ 		if(Bulletlist[key].timer > 100){
+ 			toRemove = true;
+ 		}
+ 		if(Bulletlist[key].combatType=='player'){
+ 			for(var key1 in Enemylist){
+ 			var isColliding = testCollisionEntity(Bulletlist[key],Enemylist[key1]);
+ 				if(isColliding){
+ 					Enemylist[key1].hp-=1;
+ 					toRemove = true;
+ 					if(Enemylist[key1].hp<=0){
+ 						enemyKilled += 1;
+ 						delete Enemylist[key1];
+ 					}
+ 					break;
+ 				}
+ 			}
+ 		}else
+ 		if(Bulletlist[key].combatType=='Enemy'){
+ 			var isColliding = testCollisionEntity(Bulletlist[key],player);
+ 			if(isColliding){
+ 				player.hp-=1;
+ 				toRemove = true;
+ 			}
+
+ 		}
+
+ 		if(toRemove){
+ 			delete Bulletlist[key];
+ 		}
+
+ 		/*if(Bulletlist[key].x < Bulletlist[key].width/2 && toRemove==false)
+ 			delete Bulletlist[key];
+
+ 		else if(canvas.width - Bulletlist[key].x < Bulletlist[key].width/2 && toRemove==false )
+ 			de/*lete Bulletlist[key];
+
+ 		else if(Bulletlist[key].y < Bulletlist[key].height/2 && toRemove==false)
+ 			delete Bulletlist[key];
+
+ 		else if(canvas.height - Bulletlist[key].y < Bulletlist[key].height/2 && toRemove==false)
+ 			delete Bulletlist[key];
+   */
+ 	}
+}
+
+updateFrameCountAndCounter = function(){
+ 	framecount++;
+ 	if(framecount % 100 == 0)
+ 		score++;
+ 	movement+=0.2;
+ 	emovement+=0.3;
+ 	if(framecount % 100 == 0)
+ 	randomlyGenerateEnemy();
+
+ 	if(framecount % 10 == 0)
+ 		for(var key in Enemylist)
+ 			performAttack(Enemylist[key]);
+
+ 	if(framecount % 75 == 0)
+ 		randomlyGenerateUpgrade();
+
+
+
+ 	//if(framecount % 25 == 0)
+ 	//	randomlyGenerateBullet();
+ 	for(var key in Enemylist){
+ 		Enemylist[key].attackcounter+=Enemylist[key].atkSpd;
+ 		updateAim(Enemylist[key]);
+ 	}
+ 	player.attackcounter += player.atkSpd;
+}
+
+
+Maps = function(id,imgSrc,width,height){
+	var self = {
+		id:id,
+		image:new Image(),
+		width:width,
+		height:height,
+	}
+	self.image.src = imgSrc;
+
+	self.draw = function(){
+
+		var x = canvas.width/2 - player.x;
+		var y = canvas.height/2 - player.y;
+		context.drawImage(self.image,0,0,self.image.width,self.image.height,x,y,self.image.width*2,self.image.height*2);
+	} 
+	return self;
+}
+
+currentMap = Maps('field','{% static 'gamelist/images/map.jpg' %}',780*2,780*2);
+
+
+
+createPlayer();
+startNewGame();
+var id = setInterval(update,40);
+</script>
+
+
+{% endblock %}

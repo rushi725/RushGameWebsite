@@ -1,0 +1,37 @@
+{% extends 'game/base.html' %}
+{% block title %}gamelist{% endblock %}
+{% load staticfiles %}
+
+
+{% block body %}
+{% if user.is_authenticated %}
+<p> Welcome {{ user.username }}</p>
+{% endif %}
+
+<h2>Here are Your all games </h2>
+<div class="albums-container container-fluid">
+		<div class="row">
+
+		
+			<div class="col-sm-4 col-lg-3">
+				<div class="thumbnail" style="border: 1px solid black;">
+				<!---Album logo-->
+		<a href="{% url 'game:gamelist:game1' %}">
+			
+			<img class="img-responsive" src="{% static 'gamelist/images/profile.png' %}"/>
+		</a>
+
+		<div class="caption">
+			<h4>Surviving Maniac</h4>
+			<h5>Highest Score:870</h5>
+
+			<!--detailes-->
+		<a href="{% url 'game:gamelist:game1' %}" class="btn btn-success btn-block">Play</a>
+
+		</div>
+	</div>
+</div>
+
+	</div>
+</div>
+{% endblock %}
